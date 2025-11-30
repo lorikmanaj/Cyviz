@@ -22,14 +22,14 @@ namespace Cyviz.Infrastructure.Extensions
 
             // Add Repositories
             services.AddScoped<IDeviceRepository, DeviceRepository>();
-            services.AddScoped<ITelemetryRepository, TelemetryRepository>();
+            services.AddScoped<IDeviceTelemetryRepository, DeviceTelemetryRepository>();
             services.AddScoped<IDeviceCommandRepository, DeviceCommandRepository>();
 
             // Add Caching
             services.AddMemoryCache();
             services.AddSingleton<IDeviceSnapshotCache, DeviceSnapshotCache>();
 
-            // Add Pipeline + Workers
+            //// Add Pipeline + Workers
             services.AddSingleton<ICommandPipeline, CommandChannelPipeline>();
             services.AddSingleton<IWorkerManager, WorkerManager>();
 

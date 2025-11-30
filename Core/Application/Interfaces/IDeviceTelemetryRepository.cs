@@ -1,6 +1,6 @@
 ﻿namespace Cyviz.Core.Application.Interfaces
 {
-    public interface ITelemetryRepository
+    public interface IDeviceTelemetryRepository
     {
     }
 }

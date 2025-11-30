@@ -19,21 +19,21 @@ namespace Cyviz
             // 2. Configure Serilog
             var logFilePath = builder.Configuration["Logging:LocalLogPath"] ?? "logs/log-.json";
 
-            Log.Logger = new LoggerConfiguration()
-                .ReadFrom.Configuration(builder.Configuration)
-                .Enrich.FromLogContext()
-                .WriteTo.Console()
-                .WriteTo.File(
-                    path: logFilePath,
-                    rollingInterval: RollingInterval.Day,
-                    fileSizeLimitBytes: 10_000_000,
-                    retainedFileCountLimit: 10,
-                    shared: true,
-                    flushToDiskInterval: TimeSpan.FromSeconds(1),
-                    formatter: new JsonFormatter())
-                .CreateLogger();
+            //Log.Logger = new LoggerConfiguration()
+            //    .ReadFrom.Configuration(builder.Configuration)
+            //    .Enrich.FromLogContext()
+            //    .WriteTo.Console()
+            //    .WriteTo.File(
+            //        path: logFilePath,
+            //        rollingInterval: RollingInterval.Day,
+            //        fileSizeLimitBytes: 10_000_000,
+            //        retainedFileCountLimit: 10,
+            //        shared: true,
+            //        flushToDiskInterval: TimeSpan.FromSeconds(1),
+            //        formatter: new JsonFormatter())
+            //    .CreateLogger();
 
-            builder.Host.UseSerilog();
+            //builder.Host.UseSerilog();
 
             // 3. Configure Services (DI)
             ConfigureServices(builder.Services, builder.Configuration);
@@ -113,8 +113,8 @@ namespace Cyviz
             app.MapControllers();
 
             // Map SignalR hubs
-            app.MapHub<ControlHub>("/controlHub");
-            app.MapHub<DeviceHub>("/deviceHub");
+            //app.MapHub<ControlHub>("/controlHub");
+            //app.MapHub<DeviceHub>("/deviceHub");
         }
     }
 }
