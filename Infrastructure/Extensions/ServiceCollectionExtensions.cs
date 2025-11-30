@@ -1,11 +1,13 @@
 ﻿using Cyviz.Core.Application.Interfaces;
 using Cyviz.Core.Application.Mappings;
 using Cyviz.Core.Application.Repositories;
+using Cyviz.Core.Application.Services;
 using Cyviz.Infrastructure.Caching;
 using Cyviz.Infrastructure.Database;
 using Cyviz.Infrastructure.Middlewares;
 using Cyviz.Infrastructure.ProtocolAdapters_PLACEHOLDERS_;
 using Cyviz.Infrastructure.Repositories.Entities;
+using Cyviz.Infrastructure.Services;
 using Cyviz.SignalR.Pipelines;
 using Cyviz.SignalR.Workers;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +38,9 @@ namespace Cyviz.Infrastructure.Extensions
             services.AddScoped<IDeviceRepository, DeviceRepository>();
             services.AddScoped<IDeviceTelemetryRepository, DeviceTelemetryRepository>();
             services.AddScoped<IDeviceCommandRepository, DeviceCommandRepository>();
+
+            // Add Services
+            services.AddScoped<IDeviceService, DeviceService>();
 
             // Add Caching
             services.AddMemoryCache();
