@@ -12,5 +12,7 @@ namespace Cyviz.Core.Application.Services
 
         Task UpdateDeviceAsync(string id, DeviceUpdateDto dto, byte[] ifMatchRowVersion);
         Task AppendTelemetryAsync(string deviceId, DeviceTelemetry telemetry);
+
+        Task MarkDeviceOnlineAsync(string deviceId);
     }
 }

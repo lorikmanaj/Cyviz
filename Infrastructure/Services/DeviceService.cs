@@ -7,6 +7,7 @@ using Cyviz.Core.Application.Models.Pagination;
 using Cyviz.Core.Application.Repositories;
 using Cyviz.Core.Application.Services;
 using Cyviz.Core.Domain.Entities;
+using Cyviz.Core.Domain.Enums;
 
 namespace Cyviz.Infrastructure.Services
 {
@@ -20,6 +21,7 @@ namespace Cyviz.Infrastructure.Services
         private readonly IDeviceTelemetryRepository _telemetryRepo = telemetryRepo;
         private readonly IDeviceSnapshotCache _snapshotCache = snapshotCache;
         private readonly IMapper _mapper = mapper;
+
 
         public async Task<KeysetPageResult<DeviceListDto>> GetDevicesAsync(string? after, int pageSize)
         {
@@ -83,6 +85,30 @@ namespace Cyviz.Infrastructure.Services
                 DeviceId = deviceId,
                 TimestampUtc = telemetry.TimestampUtc,
                 DataJson = telemetry.DataJson
+            });
+        }
+
+        public async Task MarkDeviceOnlineAsync(string deviceId)
+        {
+            var device = await _repo.GetByIdAsync(deviceId)
+                ?? throw new KeyNotFoundException($"Device {deviceId} not found");
+
+            var now = DateTime.UtcNow;
+
+            // Update device
+            device.LastSeenUtc = now;
+
+            if (device.Status != DeviceStatus.Online)
+                device.Status = DeviceStatus.Online;
+
+            await _repo.UpdateAsync(device);
+
+            // Update snapshot cache
+            _snapshotCache.SetLatestSnapshot(new DeviceSnapshotDto
+            {
+                DeviceId = deviceId,
+                TimestampUtc = now,
+                DataJson = null // heartbeat has no telemetry payload
             });
         }
     }
