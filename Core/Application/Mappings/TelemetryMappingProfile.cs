@@ -1,6 +1,14 @@
-﻿namespace Cyviz.Core.Application.Mappings
+﻿using AutoMapper;
+using Cyviz.Core.Application.DTOs.Telemetry;
+using Cyviz.Core.Domain.Entities;
+
+namespace Cyviz.Core.Application.Mappings
 {
-    public class TelemetryMappingProfile
+    public class TelemetryMappingProfile : Profile
     {
+        public TelemetryMappingProfile()
+        {
+            CreateMap<DeviceTelemetry, TelemetryDto>();
+        }
     }
 }
