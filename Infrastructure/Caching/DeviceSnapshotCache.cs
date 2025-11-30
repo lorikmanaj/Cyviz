@@ -8,14 +8,15 @@ namespace Cyviz.Infrastructure.Caching
     {
         private readonly IMemoryCache _cache = cache;
 
-        public DeviceSnapshotDto? GetSnapshot(string deviceId)
+        public DeviceSnapshotDto? GetLatestSnapshot(string deviceId)
         {
             _cache.TryGetValue(deviceId, out DeviceSnapshotDto? snapshot);
             return snapshot;
         }
 
-        public void SetSnapshot(DeviceSnapshotDto snapshot)
+        public void SetLatestSnapshot(DeviceSnapshotDto snapshot)
         {
+
             var cacheOptions = new MemoryCacheEntryOptions
             {
                 SlidingExpiration = TimeSpan.FromMinutes(5)

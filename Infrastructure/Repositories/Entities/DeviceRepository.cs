@@ -10,6 +10,11 @@ namespace Cyviz.Infrastructure.Repositories.Entities
 {
     public class DeviceRepository(ApplicationDbContext context) : BaseRepository<Device>(context), IDeviceRepository
     {
+        public bool AnyDevices()
+        {
+            return _context.Devices.Any();
+        }
+
         public async Task<KeysetPageResult<Device>> GetDevicesKeysetAsync(string? after, int pageSize)
         {
             IQueryable<Device> query = _context.Devices.AsNoTracking();

@@ -4,7 +4,7 @@ namespace Cyviz.Core.Application.Interfaces
 {
     public interface IDeviceSnapshotCache
     {
-        DeviceSnapshotDto? GetSnapshot(string deviceId);
-        void SetSnapshot(DeviceSnapshotDto snapshot);
+        DeviceSnapshotDto? GetLatestSnapshot(string deviceId);
+        void SetLatestSnapshot(DeviceSnapshotDto snapshot);
     }
 }

@@ -28,7 +28,7 @@ namespace Cyviz.Infrastructure.Services
             // Update device "last seen" + bring Online
             device.LastSeenUtc = timestampUtc;
             device.Status = DeviceStatus.Online;
-            _deviceRepo.Update(device);
+            await _deviceRepo.UpdateAsync(device);
 
             var telemetry = new DeviceTelemetry
             {
@@ -48,12 +48,11 @@ namespace Cyviz.Infrastructure.Services
             var snapshot = new DeviceSnapshotDto
             {
                 DeviceId = deviceId,
-                Status = DeviceStatus.Online,
-                LastSeenUtc = timestampUtc,
-                LastTelemetryJson = dataJson
+                TimestampUtc = timestampUtc,
+                DataJson = dataJson
             };
 
-            _snapshotCache.SetSnapshot(snapshot);
+            _snapshotCache.SetLatestSnapshot(snapshot);
         }
 
         public async Task<IReadOnlyList<TelemetryDto>> GetRecentTelemetryAsync(string deviceId, int limit)
@@ -64,7 +63,7 @@ namespace Cyviz.Infrastructure.Services
 
         public DeviceSnapshotDto? GetSnapshot(string deviceId)
         {
-            return _snapshotCache.GetSnapshot(deviceId);
+            return _snapshotCache.GetLatestSnapshot(deviceId);
         }
     }
 }

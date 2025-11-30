@@ -1,6 +1,8 @@
-﻿namespace Cyviz.SignalR.Hubs
+﻿using Microsoft.AspNetCore.SignalR;
+
+namespace Cyviz.SignalR.Hubs
 {
-    public class ControlHub
+    public class ControlHub : Hub
     {
     }
 }

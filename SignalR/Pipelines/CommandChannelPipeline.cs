@@ -25,6 +25,7 @@ namespace Cyviz.SignalR.Pipelines
     public class CommandChannelPipeline : ICommandPipeline
     {
         private readonly int _workerCount;
+        public int WorkerCount => _workerCount;
         private readonly Channel<DeviceCommand>[] _channels;
 
         public CommandChannelPipeline(int? workerCount = null)

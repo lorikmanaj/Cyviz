@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using Cyviz.Core.Application.DTOs.Device;
+using Cyviz.Core.Application.DTOs.DeviceSnapshot;
+using Cyviz.Core.Application.Exceptions;
 using Cyviz.Core.Application.Interfaces;
 using Cyviz.Core.Application.Models.Pagination;
 using Cyviz.Core.Application.Repositories;
@@ -44,6 +46,13 @@ namespace Cyviz.Infrastructure.Services
             return dto;
         }
 
+        public Task UpdateDeviceAsync(string id, DeviceUpdateDto dto)
+        {
+            // DO NOT allow updates without ETag -> Specification
+            throw new PreconditionFailedException(
+                "Missing If-Match ETag header. Concurrency update requires ETag.");
+        }
+
         public async Task UpdateDeviceAsync(string id, DeviceUpdateDto dto, byte[] ifMatchRowVersion)
         {
             var device = await _repo.GetByIdAsync(id)
@@ -69,7 +78,12 @@ namespace Cyviz.Infrastructure.Services
             await _telemetryRepo.TrimHistoryAsync(deviceId, 50);
 
             // update snapshot
-            _snapshotCache.SetLatestSnapshot(deviceId, telemetry);
+            _snapshotCache.SetLatestSnapshot(new DeviceSnapshotDto
+            {
+                DeviceId = deviceId,
+                TimestampUtc = telemetry.TimestampUtc,
+                DataJson = telemetry.DataJson
+            });
         }
     }
 }

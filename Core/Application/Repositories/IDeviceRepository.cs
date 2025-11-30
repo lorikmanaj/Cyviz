@@ -6,6 +6,7 @@ namespace Cyviz.Core.Application.Repositories
 {
     public interface IDeviceRepository : IBaseRepository<Device>
     {
+        bool AnyDevices();
         Task<KeysetPageResult<Device>> GetDevicesKeysetAsync(string? after, int pageSize);
     }
 }

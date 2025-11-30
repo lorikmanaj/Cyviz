@@ -2,6 +2,7 @@
 using Cyviz.Core.Application.Mappings;
 using Cyviz.Core.Application.Repositories;
 using Cyviz.Core.Application.Services;
+using Cyviz.Core.Domain.Services;
 using Cyviz.Infrastructure.Caching;
 using Cyviz.Infrastructure.Database;
 using Cyviz.Infrastructure.Middlewares;
@@ -54,8 +55,18 @@ namespace Cyviz.Infrastructure.Extensions
             //Web HostedService so it can run in background
             services.AddHostedService<WorkerManager>();
 
+            // Http client for HTTP devices
+            services.AddHttpClient("DeviceHttpClient");
+
             // Protocol Adapters (placeholders)
-            //services.AddScoped<IDeviceProtocolAdapter, EdgeSignalRAdapter>();
+            services.AddSingleton<IHttpJsonAdapter, HttpJsonAdapter>();
+            services.AddSingleton<ITcpLineAdapter, TcpLineAdapter>();
+            services.AddSingleton<IEdgeSignalRAdapter, EdgeSignalRAdapter>();
+
+            services.AddSingleton<IDeviceProtocolAdapterResolver, DeviceProtocolAdapterResolver>();
+
+            // Circuit breaker registry
+            services.AddSingleton<IDeviceCircuitBreakerRegistry, DeviceCircuitBreakerRegistry>();
 
             // Middlewares
             services.AddScoped<RequestLoggingMiddleware>();

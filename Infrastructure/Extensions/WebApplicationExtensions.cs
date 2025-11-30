@@ -29,8 +29,8 @@ namespace Cyviz.Infrastructure.Extensions
 
         public static void StartSignalRWorkers(this WebApplication app)
         {
-            var workerManager = app.Services.GetRequiredService<IWorkerManager>();
-            workerManager.StartWorkers();
+            //var workerManager = app.Services.GetRequiredService<IWorkerManager>();
+            //workerManager.StartWorkers();
         }
     }
 }
