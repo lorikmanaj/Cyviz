@@ -2,5 +2,7 @@
 {
     public enum DeviceStatus
     {
+        Online,
+        Offline
     }
 }

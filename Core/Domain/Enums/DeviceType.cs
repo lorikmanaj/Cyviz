@@ -2,5 +2,9 @@
 {
     public enum DeviceType
     {
+        Display,
+        Codec,
+        Switcher,
+        Sensor
     }
 }

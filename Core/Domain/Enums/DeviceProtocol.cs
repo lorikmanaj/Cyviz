@@ -2,5 +2,8 @@
 {
     public enum DeviceProtocol
     {
+        TcpLine,
+        HttpJson,
+        EdgeSignalR
     }
 }
