@@ -1,4 +1,6 @@
 ﻿using Cyviz.Core.Application.Interfaces;
+using Cyviz.Core.Application.Mappings;
+using Cyviz.Core.Application.Repositories;
 using Cyviz.Infrastructure.Caching;
 using Cyviz.Infrastructure.Database;
 using Cyviz.Infrastructure.Middlewares;
@@ -6,6 +8,8 @@ using Cyviz.Infrastructure.ProtocolAdapters_PLACEHOLDERS_;
 using Cyviz.Infrastructure.Repositories.Entities;
 using Cyviz.SignalR.Pipelines;
 using Cyviz.SignalR.Workers;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Cyviz.Infrastructure.Extensions
 {
@@ -18,6 +22,14 @@ namespace Cyviz.Infrastructure.Extensions
             {
                 options.UseSqlite(config.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly("CyvizAPI"));
+            });
+
+            // Add Mappers
+            services.AddAutoMapper(cfg =>
+            {
+                cfg.AddProfile<DeviceMappingProfile>();
+                cfg.AddProfile<CommandMappingProfile>();
+                cfg.AddProfile<TelemetryMappingProfile>();
             });
 
             // Add Repositories
