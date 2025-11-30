@@ -48,9 +48,11 @@ namespace Cyviz.Infrastructure.Extensions
             services.AddMemoryCache();
             services.AddSingleton<IDeviceSnapshotCache, DeviceSnapshotCache>();
 
-            //// Add Pipeline + Workers
+            //// Add (signalR) Pipeline + Workers
+            ///Signleton for CommandPipeline so it can be shared
             services.AddSingleton<ICommandPipeline, CommandChannelPipeline>();
-            services.AddSingleton<IWorkerManager, WorkerManager>();
+            //Web HostedService so it can run in background
+            services.AddHostedService<WorkerManager>();
 
             // Protocol Adapters (placeholders)
             //services.AddScoped<IDeviceProtocolAdapter, EdgeSignalRAdapter>();

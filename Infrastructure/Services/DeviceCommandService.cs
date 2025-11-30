@@ -54,11 +54,9 @@ namespace Cyviz.Infrastructure.Services
 
             // Try enqueue
             var accepted = await _pipeline.EnqueueAsync(command, ct);
+            // Queue full, controller maps this to HTTP 429 + Retry-After
             if (!accepted)
-            {
-                // Queue full →controller maps this to HTTP 429 + Retry-After
                 throw new CommandQueueFullException();
-            }
 
             return new CommandResponseDto
             {
