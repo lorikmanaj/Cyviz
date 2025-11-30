@@ -1,4 +1,5 @@
-﻿using Cyviz.Core.Domain.Enums;
+﻿using Cyviz.Core.Application.DTOs.DeviceSnapshot;
+using Cyviz.Core.Domain.Enums;
 
 namespace Cyviz.Core.Application.DTOs.Device
 {
@@ -13,5 +14,7 @@ namespace Cyviz.Core.Application.DTOs.Device
         public string Firmware { get; set; }
         public string Location { get; set; }
         public DateTime LastSeenUtc { get; set; }
+
+        public DeviceSnapshotDto? LatestTelemetry { get; set; }
     }
 }
