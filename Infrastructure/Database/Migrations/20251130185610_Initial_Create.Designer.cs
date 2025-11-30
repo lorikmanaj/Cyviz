@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Cyviz.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251130183548_Initial_Create")]
+    [Migration("20251130185610_Initial_Create")]
     partial class Initial_Create
     {
         /// <inheritdoc />
@@ -51,7 +51,6 @@ namespace Cyviz.Infrastructure.Database.Migrations
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("BLOB");
 

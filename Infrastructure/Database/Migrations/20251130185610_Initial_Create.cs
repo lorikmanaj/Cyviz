@@ -24,7 +24,7 @@ namespace Cyviz.Infrastructure.Database.Migrations
                     LastSeenUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Firmware = table.Column<string>(type: "TEXT", nullable: false),
                     Location = table.Column<string>(type: "TEXT", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "BLOB", rowVersion: true, nullable: false)
+                    RowVersion = table.Column<byte[]>(type: "BLOB", rowVersion: true, nullable: true)
                 },
                 constraints: table =>
                 {
