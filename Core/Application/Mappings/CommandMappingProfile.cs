@@ -10,6 +10,8 @@ namespace Cyviz.Core.Application.Mappings
         {
             CreateMap<DeviceCommand, CommandStatusDto>()
                 .ForMember(dest => dest.CommandId, opt => opt.MapFrom(src => src.Id));
+
+            CreateMap<DeviceCommand, CommandResultDto>();
         }
     }
 }

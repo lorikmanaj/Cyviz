@@ -2,7 +2,7 @@
 {
     public class CommandRequestDto
     {
-        public string Command { get; set; }
-        public string IdempotencyKey { get; set; }
+        public string Command { get; set; } = default!;
+        public string IdempotencyKey { get; set; } = default!;
     }
 }
