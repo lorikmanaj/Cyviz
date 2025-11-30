@@ -1,6 +1,10 @@
-﻿namespace Cyviz.Core.Application.Interfaces
+﻿using Cyviz.Core.Domain.Entities;
+using Cyviz.Infrastructure.Repositories.Generic;
+
+namespace Cyviz.Core.Application.Interfaces
 {
-    public interface IDeviceCommandRepository
+    public interface IDeviceCommandRepository : IBaseRepository<DeviceCommand>
     {
+        Task<bool> ExistsIdempotentAsync(string deviceId, string idempotencyKey);
     }
 }
