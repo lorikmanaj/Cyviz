@@ -2,5 +2,7 @@
 {
     public class TelemetryPayload
     {
+        public DateTime TimestampUtc { get; init; }
+        public string PayloadJson { get; init; } = default!;
     }
 }
