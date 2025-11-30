@@ -2,5 +2,7 @@
 {
     public class TelemetryDto
     {
+        public DateTime TimestampUtc { get; set; }
+        public string DataJson { get; set; }
     }
 }
