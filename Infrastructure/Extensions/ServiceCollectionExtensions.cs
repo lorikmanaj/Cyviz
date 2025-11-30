@@ -24,7 +24,7 @@ namespace Cyviz.Infrastructure.Extensions
             services.AddDbContext<ApplicationDbContext>(options =>
             {
                 options.UseSqlite(config.GetConnectionString("DefaultConnection"),
-                    b => b.MigrationsAssembly("CyvizAPI"));
+                    b => b.MigrationsAssembly("Cyviz"));
             });
 
             // Add Mappers
