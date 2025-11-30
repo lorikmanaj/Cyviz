@@ -13,11 +13,13 @@ namespace Cyviz.SignalR.Workers
         IServiceScopeFactory scopeFactory,
         IDeviceProtocolAdapterResolver adapterResolver,
         IDeviceCircuitBreakerRegistry circuitBreakers,
+        IRetryPolicy retryPolicy,
         IHubContext<ControlHub> controlHub,
         ILogger<WorkerManager> logger) : BackgroundService
     {
         private readonly ICommandPipeline _pipeline = pipeline;
         private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
+        private readonly IRetryPolicy _retryPolicy = retryPolicy;
         private readonly IDeviceProtocolAdapterResolver _adapterResolver = adapterResolver;
         private readonly IDeviceCircuitBreakerRegistry _circuitBreakers = circuitBreakers;
         private readonly ILogger<WorkerManager> _logger = logger;
@@ -109,11 +111,16 @@ namespace Cyviz.SignalR.Workers
             var adapter = _adapterResolver.ResolveAdapter(device);
 
             // 4) Execute with retry + jitter
-            var success = await ExecuteWithRetryAsync(async () =>
-            {
-                // This is where we “send” to the device
-                await adapter.SendCommandAsync(device, command, ct);
-            }, ct);
+            //var success = await ExecuteWithRetryAsync(async () =>
+            //{
+            //    // This is where we “send” to the device
+            //    await adapter.SendCommandAsync(device, command, ct);
+            //}, ct);
+            var success = await _retryPolicy.ExecuteAsync(
+                () => adapter.SendCommandAsync(device, command, ct),
+                _logger,
+                ct
+            );
 
             if (success)
             {
@@ -151,51 +158,6 @@ namespace Cyviz.SignalR.Workers
         /// <summary>
         /// Retry with jitter: ~100ms, 300ms, 700ms
         /// </summary>
-        private async Task<bool> ExecuteWithRetryAsync(Func<Task> action, CancellationToken ct)
-        {
-            var delays = new[] { 100, 300, 700 };
-            var rnd = new Random();
-
-            for (int attempt = 0; attempt < delays.Length; attempt++)
-            {
-                try
-                {
-                    await action();
-                    return true;
-                }
-                catch (OperationCanceledException) when (ct.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex,
-                        "Command execution failed on attempt {Attempt}, will retry if attempts remain",
-                        attempt + 1);
-
-                    if (attempt == delays.Length - 1)
-                    {
-                        // No more retries
-                        break;
-                    }
-
-                    var baseDelay = delays[attempt];
-                    var jitter = rnd.Next(0, baseDelay); // 0..baseDelay
-                    var delayMs = baseDelay + jitter;
-
-                    try
-                    {
-                        await Task.Delay(delayMs, ct);
-                    }
-                    catch (OperationCanceledException) when (ct.IsCancellationRequested)
-                    {
-                        throw;
-                    }
-                }
-            }
-
-            return false;
-        }
 
         private async Task MarkCommandCompletedAsync(DeviceCommand command)
         {

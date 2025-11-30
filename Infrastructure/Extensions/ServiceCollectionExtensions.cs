@@ -12,6 +12,7 @@ using Cyviz.Infrastructure.Repositories.Entities;
 using Cyviz.Infrastructure.Services;
 using Cyviz.SignalR.Pipelines;
 using Cyviz.SignalR.Workers;
+using Cyviz.Simulators;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -61,6 +62,8 @@ namespace Cyviz.Infrastructure.Extensions
             //Web HostedService so it can run in background
             services.AddHostedService<WorkerManager>();
 
+            services.AddSingleton<IRetryPolicy, RetryPolicy>();
+
             // Http client for HTTP devices
             services.AddHttpClient("DeviceHttpClient");
 
@@ -73,6 +76,16 @@ namespace Cyviz.Infrastructure.Extensions
 
             // Circuit breaker registry
             services.AddSingleton<IDeviceCircuitBreakerRegistry, DeviceCircuitBreakerRegistry>();
+
+            services.AddSingleton<DeviceSimulator>(sp =>
+            {
+                var cfg = sp.GetRequiredService<IConfiguration>();
+                return new DeviceSimulator(
+                    hubUrl: cfg["Simulator:HubUrl"]!,
+                    apiKey: cfg["ApiKeys:Device"]!);
+            });
+
+            services.AddSingleton<EdgeDeviceRunner>();
 
             return services;
         }
