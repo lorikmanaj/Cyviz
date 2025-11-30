@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Cyviz.Core.Domain.Enums;
+using Microsoft.Extensions.Options;
 using Serilog;
 using System.Net;
 
@@ -10,17 +11,11 @@ namespace Cyviz.Infrastructure.Middlewares
         public string Operator { get; set; }
     }
 
-    public class ApiKeyMiddleware
+    public class ApiKeyMiddleware(RequestDelegate next, IOptions<ApiKeyOptions> options)
     {
-        private readonly RequestDelegate _next;
-        private readonly ApiKeyOptions _keys;
+        private readonly RequestDelegate _next = next;
+        private readonly ApiKeyOptions _keys = options.Value;
         private readonly Serilog.ILogger _logger = Log.ForContext<ApiKeyMiddleware>();
-
-        public ApiKeyMiddleware(RequestDelegate next, IOptions<ApiKeyOptions> options)
-        {
-            _next = next;
-            _keys = options.Value;
-        }
 
         public async Task InvokeAsync(HttpContext context)
         {
@@ -54,7 +49,17 @@ namespace Cyviz.Infrastructure.Middlewares
             }
 
             // Bind caller type to HttpContext for logging
-            context.Items["CallerType"] = apiKey == _keys.Device ? "Device" : "Operator";
+            if (apiKey == _keys.Device)
+                context.Items["CallerType"] = ApiCallerType.Device;
+
+            else if (apiKey == _keys.Operator)
+                context.Items["CallerType"] = ApiCallerType.Operator;
+
+            else
+            {
+                await WriteUnauthorized(context, "Invalid API key");
+                return;
+            }
 
             await _next(context);
         }
