@@ -5,6 +5,7 @@ using Cyviz.Core.Application.Services;
 using Cyviz.Core.Domain.Services;
 using Cyviz.Infrastructure.Caching;
 using Cyviz.Infrastructure.Database;
+using Cyviz.Infrastructure.Database.Seeders;
 using Cyviz.Infrastructure.Middlewares;
 using Cyviz.Infrastructure.ProtocolAdapters_PLACEHOLDERS_;
 using Cyviz.Infrastructure.Repositories.Entities;
@@ -27,6 +28,8 @@ namespace Cyviz.Infrastructure.Extensions
                     b => b.MigrationsAssembly("Cyviz"));
             });
 
+            services.Configure<ApiKeyOptions>(config.GetSection("ApiKeys"));
+
             // Add Mappers
             services.AddAutoMapper(cfg =>
             {
@@ -44,6 +47,9 @@ namespace Cyviz.Infrastructure.Extensions
             services.AddScoped<IDeviceService, DeviceService>();
             services.AddScoped<IDeviceTelemetryService, DeviceTelemetryService>();
             services.AddScoped<IDeviceCommandService, DeviceCommandService>();
+
+            //Add Seeders
+            services.AddScoped<IDeviceSeeder, DeviceSeeder>();
 
             // Add Caching
             services.AddMemoryCache();
@@ -67,11 +73,6 @@ namespace Cyviz.Infrastructure.Extensions
 
             // Circuit breaker registry
             services.AddSingleton<IDeviceCircuitBreakerRegistry, DeviceCircuitBreakerRegistry>();
-
-            // Middlewares
-            services.AddScoped<RequestLoggingMiddleware>();
-            services.AddScoped<ApiKeyMiddleware>();
-            services.AddScoped<ExceptionMiddleware>();
 
             return services;
         }
