@@ -1,5 +1,8 @@
 ﻿using Cyviz.Core.Application.Interfaces;
+using Cyviz.Core.Application.Repositories;
 using Cyviz.Infrastructure.Database;
+using Cyviz.Infrastructure.Database.Seeders;
+using Microsoft.EntityFrameworkCore;
 
 namespace Cyviz.Infrastructure.Extensions
 {
@@ -9,13 +12,13 @@ namespace Cyviz.Infrastructure.Extensions
         {
             using var scope = app.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var repo = scope.ServiceProvider.GetRequiredService<IDeviceRepository>();
+            var deviceRepository = scope.ServiceProvider.GetRequiredService<IDeviceRepository>();
 
             db.Database.Migrate();
             db.Database.EnsureCreated();
 
             // Seed devices on first run
-            if (!repo.AnyDevices())
+            if (!deviceRepository.AnyDevices())
             {
                 var seeder = scope.ServiceProvider.GetRequiredService<IDeviceSeeder>();
                 seeder.SeedDevicesAsync().Wait();

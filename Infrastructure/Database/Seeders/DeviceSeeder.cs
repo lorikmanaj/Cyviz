@@ -1,4 +1,4 @@
-﻿using Cyviz.Core.Application.Interfaces;
+﻿using Cyviz.Core.Application.Repositories;
 using Cyviz.Core.Domain.Entities;
 using Cyviz.Core.Domain.Enums;
 
@@ -9,14 +9,9 @@ namespace Cyviz.Infrastructure.Database.Seeders
         Task SeedDevicesAsync();
     }
 
-    public class DeviceSeeder : IDeviceSeeder
+    public class DeviceSeeder(IDeviceRepository repo) : IDeviceSeeder
     {
-        private readonly IDeviceRepository _repo;
-
-        public DeviceSeeder(IDeviceRepository repo)
-        {
-            _repo = repo;
-        }
+        private readonly IDeviceRepository _repo = repo;
 
         public async Task SeedDevicesAsync()
         {
@@ -30,7 +25,7 @@ namespace Cyviz.Infrastructure.Database.Seeders
                 Name = $"Device-{i:00}",
                 Type = types[random.Next(types.Length)],
                 Protocol = protocols[random.Next(protocols.Length)],
-                Capabilities = new List<string> { "Ping", "GetStatus", "Reboot" },
+                Capabilities = ["Ping", "GetStatus", "Reboot"],
                 Status = DeviceStatus.Offline,
                 LastSeenUtc = DateTime.UtcNow,
                 Firmware = "v1.0.0",
@@ -38,6 +33,7 @@ namespace Cyviz.Infrastructure.Database.Seeders
             }).ToList();
 
             await _repo.AddRangeAsync(devices);
+            await _repo.SaveChangesAsync();
         }
     }
 }

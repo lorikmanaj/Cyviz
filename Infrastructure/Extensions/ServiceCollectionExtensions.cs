@@ -41,6 +41,8 @@ namespace Cyviz.Infrastructure.Extensions
 
             // Add Services
             services.AddScoped<IDeviceService, DeviceService>();
+            services.AddScoped<IDeviceTelemetryService, DeviceTelemetryService>();
+            services.AddScoped<IDeviceCommandService, DeviceCommandService>();
 
             // Add Caching
             services.AddMemoryCache();
