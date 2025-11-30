@@ -15,34 +15,29 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
             _dbSet = _context.Set<T>();
         }
 
-        public virtual async Task<T?> GetByIdAsync(object id)
-        {
-            return await _dbSet.FindAsync(id);
-        }
-
-        public virtual IQueryable<T> Query()
-        {
-            return _dbSet.AsQueryable();
-        }
-
         public virtual async Task AddAsync(T entity)
         {
             await _dbSet.AddAsync(entity);
         }
 
-        public virtual async Task AddRangeAsync(IEnumerable<T> entities)
+        public virtual async Task<T?> GetByIdAsync(string id)
         {
-            await _dbSet.AddRangeAsync(entities);
+            return await _dbSet.FindAsync(id);
         }
 
-        public virtual void Update(T entity)
+        public virtual async Task<T?> GetByIdAsync(Guid id)
         {
-            _dbSet.Update(entity);
+            return await _dbSet.FindAsync(id);
         }
 
-        public virtual void Remove(T entity)
+        public virtual async Task<T?> GetByIdAsync(int id)
         {
-            _dbSet.Remove(entity);
+            return await _dbSet.FindAsync(id);
+        }
+
+        public virtual async Task<IEnumerable<T>> GetAllAsync()
+        {
+            return await _dbSet.ToListAsync();
         }
 
         public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
@@ -55,9 +50,45 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
             return _dbSet.Where(predicate);
         }
 
-        public virtual async Task<int> SaveChangesAsync()
+        public virtual async Task UpdateAsync(T entity)
         {
-            return await _context.SaveChangesAsync();
+            _dbSet.Update(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        public virtual async Task DeleteAsync(string id)
+        {
+            var entity = await _dbSet.FindAsync(id);
+            if (entity != null)
+            {
+                _dbSet.Remove(entity);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public virtual async Task DeleteAsync(Guid id)
+        {
+            var entity = await _dbSet.FindAsync(id);
+            if (entity != null)
+            {
+                _dbSet.Remove(entity);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public virtual async Task DeleteAsync(int id)
+        {
+            var entity = await _dbSet.FindAsync(id);
+            if (entity != null)
+            {
+                _dbSet.Remove(entity);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public virtual async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
         }
     }
 }

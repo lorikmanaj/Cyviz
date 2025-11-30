@@ -4,19 +4,20 @@ namespace Cyviz.Infrastructure.Repositories.Generic
 {
     public interface IBaseRepository<T> where T : class
     {
-        Task<T?> GetByIdAsync(object id);
-
-        IQueryable<T> Query();
-
         Task AddAsync(T entity);
-        Task AddRangeAsync(IEnumerable<T> entities);
+        Task UpdateAsync(T entity);
+        Task SaveChangesAsync();
 
-        void Update(T entity);
-        void Remove(T entity);
+        Task<T?> GetByIdAsync(string id);
+        Task<T?> GetByIdAsync(Guid id);
+        Task<T?> GetByIdAsync(int id);
 
+        Task<IEnumerable<T>> GetAllAsync();
         Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
         IQueryable<T> Find(Expression<Func<T, bool>> predicate);
 
-        Task<int> SaveChangesAsync();
+        Task DeleteAsync(string id);
+        Task DeleteAsync(Guid id);
+        Task DeleteAsync(int id);
     }
 }
