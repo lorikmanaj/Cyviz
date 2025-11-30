@@ -1,14 +1,22 @@
 ﻿using AutoMapper;
 using Cyviz.Core.Application.DTOs.Device;
+using Cyviz.Core.Application.Interfaces;
 using Cyviz.Core.Application.Models.Pagination;
 using Cyviz.Core.Application.Repositories;
 using Cyviz.Core.Application.Services;
+using Cyviz.Core.Domain.Entities;
 
 namespace Cyviz.Infrastructure.Services
 {
-    public class DeviceService(IDeviceRepository repo, IMapper mapper) : IDeviceService
+    public class DeviceService(
+        IDeviceRepository repo,
+        IDeviceTelemetryRepository telemetryRepo,
+        IDeviceSnapshotCache snapshotCache,
+        IMapper mapper) : IDeviceService
     {
         private readonly IDeviceRepository _repo = repo;
+        private readonly IDeviceTelemetryRepository _telemetryRepo = telemetryRepo;
+        private readonly IDeviceSnapshotCache _snapshotCache = snapshotCache;
         private readonly IMapper _mapper = mapper;
 
         public async Task<KeysetPageResult<DeviceListDto>> GetDevicesAsync(string? after, int pageSize)
@@ -25,20 +33,43 @@ namespace Cyviz.Infrastructure.Services
         public async Task<DeviceDetailDto> GetDeviceByIdAsync(string id)
         {
             var device = await _repo.GetByIdAsync(id)
-                ?? throw new Exception("Device not found");
+                ?? throw new KeyNotFoundException("Device not found");
 
-            return _mapper.Map<DeviceDetailDto>(device);
+            var dto = _mapper.Map<DeviceDetailDto>(device);
+
+            // latest telemetry snapshot (in-memory cache)
+            var snapshot = _snapshotCache.GetLatestSnapshot(id);
+            dto.LatestTelemetry = snapshot;
+
+            return dto;
         }
 
-        public async Task UpdateDeviceAsync(string id, DeviceUpdateDto dto)
+        public async Task UpdateDeviceAsync(string id, DeviceUpdateDto dto, byte[] ifMatchRowVersion)
         {
             var device = await _repo.GetByIdAsync(id)
-                ?? throw new Exception("Device not found");
+                ?? throw new KeyNotFoundException("Device not found");
 
-            _mapper.Map(dto, device);
+            // ETag concurrency check
+            if (!device.RowVersion.SequenceEqual(ifMatchRowVersion))
+                throw new PreconditionFailedException("ETag mismatch – device was modified.");
 
-            _repo.Update(device);
-            await _repo.SaveChangesAsync();
+            // map allowed fields
+            device.Location = dto.Location;
+            device.Name = dto.Name;
+            device.Firmware = dto.Firmware;
+
+            await _repo.UpdateAsync(device);
+        }
+
+        public async Task AppendTelemetryAsync(string deviceId, DeviceTelemetry telemetry)
+        {
+            await _telemetryRepo.AddAsync(telemetry);
+
+            // keep only last 50
+            await _telemetryRepo.TrimHistoryAsync(deviceId, 50);
+
+            // update snapshot
+            _snapshotCache.SetLatestSnapshot(deviceId, telemetry);
         }
     }
 }
