@@ -10,16 +10,14 @@ namespace Cyviz.SignalR.Workers
 {
     public class WorkerManager(
         ICommandPipeline pipeline,
-        IDeviceRepository deviceRepo,
-        IDeviceCommandRepository commandRepo,
+        IServiceScopeFactory scopeFactory,
         IDeviceProtocolAdapterResolver adapterResolver,
         IDeviceCircuitBreakerRegistry circuitBreakers,
         IHubContext<ControlHub> controlHub,
         ILogger<WorkerManager> logger) : BackgroundService
     {
         private readonly ICommandPipeline _pipeline = pipeline;
-        private readonly IDeviceRepository _deviceRepo = deviceRepo;
-        private readonly IDeviceCommandRepository _commandRepo = commandRepo;
+        private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
         private readonly IDeviceProtocolAdapterResolver _adapterResolver = adapterResolver;
         private readonly IDeviceCircuitBreakerRegistry _circuitBreakers = circuitBreakers;
         private readonly ILogger<WorkerManager> _logger = logger;
@@ -82,8 +80,12 @@ namespace Cyviz.SignalR.Workers
 
         private async Task ProcessCommandAsync(DeviceCommand command, CancellationToken ct)
         {
+            using var scope = _scopeFactory.CreateScope();
+
+            var deviceRepo = scope.ServiceProvider.GetRequiredService<IDeviceRepository>();
+
             // 1) Load device
-            var device = await _deviceRepo.GetByIdAsync(command.DeviceId);
+            var device = await deviceRepo.GetByIdAsync(command.DeviceId);
             if (device == null)
             {
                 _logger.LogWarning("Device {DeviceId} not found for command {CommandId}", command.DeviceId, command.Id);
@@ -197,19 +199,27 @@ namespace Cyviz.SignalR.Workers
 
         private async Task MarkCommandCompletedAsync(DeviceCommand command)
         {
+            using var scope = _scopeFactory.CreateScope();
+
+            var commandRepo = scope.ServiceProvider.GetRequiredService<IDeviceCommandRepository>();
+
             command.Status = CommandStatus.Completed;
             command.CompletedUtc = DateTime.UtcNow;
 
-            await _commandRepo.UpdateAsync(command);
+            await commandRepo.UpdateAsync(command);
         }
 
         private async Task MarkCommandFailedAsync(DeviceCommand command, string reason)
         {
+            using var scope = _scopeFactory.CreateScope();
+
+            var commandRepo = scope.ServiceProvider.GetRequiredService<IDeviceCommandRepository>();
+
             command.Status = CommandStatus.Failed;
             command.CompletedUtc = DateTime.UtcNow;
             // Optionally add: command.ErrorMessage = reason;
 
-            await _commandRepo.UpdateAsync(command);
+            await commandRepo.UpdateAsync(command);
         }
     }
 }
