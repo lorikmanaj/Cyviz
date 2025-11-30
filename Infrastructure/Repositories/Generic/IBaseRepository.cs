@@ -5,6 +5,7 @@ namespace Cyviz.Infrastructure.Repositories.Generic
     public interface IBaseRepository<T> where T : class
     {
         Task AddAsync(T entity);
+        Task AddRangeAsync(IEnumerable<T> entities);
         Task UpdateAsync(T entity);
         Task SaveChangesAsync();
 

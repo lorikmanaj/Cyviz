@@ -19,6 +19,10 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
         {
             await _dbSet.AddAsync(entity);
         }
+        public virtual async Task AddRangeAsync(IEnumerable<T> entities)
+        {
+            await _dbSet.AddRangeAsync(entities);
+        }
 
         public virtual async Task<T?> GetByIdAsync(string id)
         {
