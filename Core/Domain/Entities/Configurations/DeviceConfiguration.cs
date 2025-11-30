@@ -36,7 +36,8 @@ namespace Cyviz.Core.Domain.Entities.Configurations
             // Concurrency token (ETag)
             builder.Property(d => d.RowVersion)
                 .IsRowVersion()
-                .IsConcurrencyToken();
+                .IsConcurrencyToken()
+                .IsRequired(false);
 
             // Indexes
             builder.HasIndex(d => d.Status);
