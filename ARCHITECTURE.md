@@ -1,449 +1,377 @@
-# 🛠 Backend Setup
+# 🚀 **FINAL ARCHITECTURE.MD**
 
-## 1. Install Requirements
-- .NET 8 SDK
-- SQLite
-- Node 18+ (for frontend)
-- VSCode / Rider / Visual Studio
+````md
+# System Architecture
 
----
+Mini Monitoring & Management Platform — Secure Edge Edition
 
-# ⚙️ Configuration
+This document describes the internal design of the system, including:
 
-`appsettings.json`:
+- Command pipeline
+- SignalR communication flows
+- Concurrency model
+- Idempotency
+- API security
+- Device simulation
+- Notes on stretch-goal features
 
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=cyviz.db"
-  },
-  "ApiKeys": {
-    "Device": "device-secret-key",
-    "Operator": "operator-secret-key"
-  }
-}
-🗄 Database Setup
-Run the migrations:
-
-cd src/backend
-dotnet ef migrations add InitialCreate -o Infrastructure/Database/Migrations
-dotnet ef database update
-
-▶️ Run the Backend
-
-cd src/backend
-dotnet run
-Backend starts on:
-
-https://localhost:5001
-http://localhost:5000
-💻 Run the Frontend
-
-cd frontend
-npm install
-npm run dev
-Frontend runs on:
-
-
-http://localhost:3000
-🔄 Running Device Simulators
-A simulator lives in:
-
-/src/backend/Simulators
-Run:
-
-dotnet run --project src/backend/Simulators/DeviceSimulator.csproj
-
-Each simulator:
-
-connects to /hubs/device
-
-registers itself using API key
-
-sends heartbeat every 5 sec
-
-sends telemetry every 2 sec
-
-executes commands when received
-
-🧪 API Overview
-GET Devices
-
-GET /api/devices?$top=10&$after=device-10&status=Online&type=Codec&search=wall
-GET Device Details
-
-GET /api/devices/device-01
-Update Device (ETag required)
-
-PUT /api/devices/device-01
-If-Match: "base64-rowversion"
-Create Command
-
-POST /api/devices/device-01/commands
-Body:
-{
-  "idempotencyKey": "uuid",
-  "command": "Ping"
-}
-
-🧩 SignalR Endpoints
-Device hub (device → backend)
-
-/hubs/device
-Methods:
-- RegisterDevice(deviceId)
-- Heartbeat(deviceId)
-- PushTelemetry(deviceId, json, timestamp)
-- CommandCompleted(deviceId, commandId, resultJson)
-
-Control hub (operator → backend)
-
-/hubs/control
-Methods:
-- Subscribe(deviceId)
-- Unsubscribe(deviceId)
-📊 Metrics & Health
-
-GET /health
-GET /metrics
-🙌 Contributing
-PRs welcome — this architecture is intentionally modular so new protocol adapters, UI pages, or telemetry processors can be added easily.
-
-📄 License
-MIT License — free to use, copy, modify.
+The goal is to illustrate production-grade architectural awareness, even where features are partially implemented due to timebox.
 
 ---
 
-# ✅ **ARCHITECTURE.md (Full Content)**
+# 🧱 Architectural Boundary Note
 
-```md
-# Cyviz System Architecture
+Due to the 16–20 hour challenge timebox, the solution uses **folder-based Clean Architecture**, not multiple class library projects.  
+Despite this, the boundaries remain clear:
 
-This document provides a complete overview of the architecture behind the Cyviz control system — including its concurrency model, pipelines, SignalR topology, protocol adapters, telemetry flow, and resilience guarantees.
+- `/Domain` → Entities + value objects
+- `/Application` → Use cases + interfaces
+- `/Infrastructure` → EF Core + adapters
+- `/Api` → Controllers + DI
 
----
-
-# 🏛 High-Level Architecture Diagram
-
-
-      ┌───────────────────────┐
-      │     React Frontend    │
-      │   (Operator Console)  │
-      └──────────┬────────────┘
-                 │ SignalR (WebSockets)
-                 ▼
-    ┌─────────────────────────────────────┐
-    │         ControlHub (/hubs/control)  │
-    └───────────────────┬─────────────────┘
-                        │ Commands / Telemetry
-                        ▼
-┌──────────────────────────────────────────────────┐
-│ ASP.NET Core Backend │
-│ │
-│ Controllers Services Workers Adapters │
-│ │ │ │ │ │
-└──────┼────────────┼───────────┼──────────┼──────┘
-│ │ │ │
-▼ ▼ ▼ ▼
-Keyset Repo Snapshot Cache Worker N Protocol
-(SQLite EF) (IMemoryCache) (hashed) Adapters
+In a production Cyviz system, these would be split into independent projects or deployable packages.
 
 ---
 
-# 🧩 Domain Design
+# 📐 1. High-Level System Diagram (Mermaid)
 
-## **Device**
-Tracks:
-- id
-- name
-- type
-- protocol
-- status
-- lastSeenUtc
-- firmware
-- location
-- rowVersion (for ETag)
+```mermaid
+flowchart LR
 
-## **DeviceTelemetry**
-Stores ≤50 telemetry records per device.
+OperatorUI(["Operator UI (React)"])
+Api[[REST API (.NET)]]
+ControlHub{{"SignalR Control Hub"}}
+DeviceHub{{"SignalR Device Hub"}}
+Workers[["Sharded Command Workers\n(consistent hashing)"]]
+Channels[/"Bounded Channels\n(size=50)"/]
+SQLite[(SQLite DB)]
+EdgeClients(["Simulated Edge Devices\n(SignalR outbound only)"])
 
-## **DeviceCommand**
-- Idempotency key
-- DeviceId
-- Status (Pending → Completed/Failed)
-- CreatedUtc / CompletedUtc
+OperatorUI <-- SignalR --> ControlHub
+OperatorUI <-- REST --> Api
+
+Api --> Channels
+Channels --> Workers
+Workers --> DeviceHub
+DeviceHub <-- SignalR --> EdgeClients
+
+EdgeClients -->|"Telemetry"| DeviceHub --> Api
+Api --> SQLite
+```
+````
 
 ---
 
-# 🔐 Concurrency Strategy
+# 🌐 NAT / Firewall Traversal
 
-## 1. **ETag Concurrency Updating**
-When updating a device:
+Devices establish **outbound-only** SignalR connections to `/hubs/device`.
 
-If-Match: "base64rowversion"
+This guarantees:
 
-The service checks:
+- No inbound TCP required
+- No port forwarding
+- Works behind enterprise firewalls
+- Stable reconnect with exponential backoff
+- Enables cloud-hosted control backend
+
+This mirrors real-world Cyviz deployments in secure private networks.
+
+---
+
+# 🔁 2. Communication Flows
+
+## 2.1 Command Flow (Operator → Device)
+
+```mermaid
+sequenceDiagram
+    participant UI as Operator UI
+    participant API as REST API
+    participant Chan as Command Channel
+    participant W as Worker Shard
+    participant DH as DeviceHub
+    participant Dev as Edge Device
+
+    UI->>API: POST /devices/{id}/commands
+    API->>Chan: Enqueue Command
+    Chan->>W: Worker receives job
+    W->>DH: SendToGroup(deviceId, "ExecuteCommand")
+    DH->>Dev: SignalR Push
+    Dev->>DH: CommandCompleted
+    DH->>API: Update DB + Status
+    API->>UI: SignalR update
+```
+
+**Key aspects:**
+
+- Commands idempotent on `(deviceId, idempotencyKey)`
+- Workers sharded by device ID
+- Each shard has a bounded channel (size 50)
+- If full → **429 Retry-After**
+
+---
+
+## 2.2 Telemetry Flow (Device → Server → UI)
+
+```mermaid
+sequenceDiagram
+    participant Dev as Device
+    participant DH as DeviceHub
+    participant API as REST API
+    participant DB as SQLite
+    participant UI as Operator UI
+
+    Dev->>DH: SendTelemetry (JSON)
+    DH->>API: Forward telemetry event
+    API->>DB: Insert (<=50 rows kept)
+    API->>UI: SignalR broadcast (TelemetryUpdated)
+```
+
+---
+
+## 2.3 Device Connection Lifecycle
+
+- Device initiates outbound SignalR connection
+- Never inbound → NAT-friendly
+- Reconnect with exponential backoff (max 10s)
+- Heartbeat every 5 seconds
+- Offline >30s → mark device Offline
+
+---
+
+# 🔐 3. Security Model
+
+## 3.1 API Key Authentication
+
+| Caller      | Header         | Purpose                                  |
+| ----------- | -------------- | ---------------------------------------- |
+| Operator UI | `X-Api-Key`    | Allows commands, queries, telemetry view |
+| Device Edge | `X-Device-Key` | Allows telemetry push + receive commands |
+
+Middleware:
+
+- Validates key
+- Tags caller as `Operator` or `Device`
+- Rejects unknown types
+
+## 3.2 Why It Works Behind Firewalls
+
+Because the device:
+
+- Opens _outbound_ WebSocket connections only
+- No inbound ports required
+- Works in corporate locked-down networks
+
+---
+
+# ⚙️ 4. Concurrency, Idempotency & Resilience
+
+## 4.1 Sharded Workers
+
+`workerIndex = hash(deviceId) % N`
+
+Benefits:
+
+- Ordering per device
+- No locks
+- Natural load spreading
+
+---
+
+## 4.2 Bounded Channels
+
+Each worker uses:
+
+```
+Channel<DeviceCommand>(capacity: 50)
+```
+
+When full:
+
+- API returns **429 Too Many Requests**
+- Includes `Retry-After` header
+
+Prevents memory pressure & overload.
+
+---
+
+## 4.3 Circuit Breaker (Partially Implemented)
+
+State machine:
+
+```
+Closed → (5 failures) → Open → (10s) → Half-Open → Closed
+```
+
+- Open: reject commands immediately
+- Telemetry still accepted
+
+Implementation outline exists; full integration is future work.
+
+---
+
+## 4.4 Retry Policy (Fully Tested)
+
+From unit tests:
+
+- 3 attempts
+- Bounded exponential backoff with jitter:
+  - 100–200ms
+  - 300–600ms
+  - 700–1400ms
+- Cancellable during delay
+- Logs warnings
+- Returns `false` after final failure
+
+Ensures resilience to transient network/device issues.
+
+---
+
+## 4.5 Idempotency
+
+Commands deduplicated via:
+
+```
+(deviceId, idempotencyKey)
+```
+
+Backed by database lookup.
+
+Guarantees **exactly-once** command creation, even after reconnects.
+
+---
+
+# 🧩 5. Device Model & Persistence
+
+### Device
+
+- Tracks metadata
+- Contains `rowVersion` for ETag
+- Updated via `PUT` with `If-Match` header
+- Violations → **412 Precondition Failed**
+
+### DeviceTelemetry
+
+- Max 50 entries/device
+- Latest snapshot cached in memory
+
+### DeviceCommand
+
+- Tracks lifecycle
+- Linked to idempotency key
+
+SQLite used as lightweight, fast embedded storage.
+
+---
+
+# 🔌 6. Protocol Adapter Abstraction
+
+Defined interface:
 
 ```csharp
-if (!device.RowVersion.SequenceEqual(ifMatchRowVersion))
-    throw new PreconditionFailedException();
-This prevents:
-
-lost updates
-
-overwrite races
-
-mid-air collisions
-
-2. Command Idempotency
-Evidence in code:
-
-var existing = await _commandRepo.GetByIdempotencyAsync(deviceId, key);
-if (existing != null) return existing;
-Ensures “exactly-once creation”.
-
-3. Consistent Hashing
-Each device is always sent to a single worker:
-
-workerIndex = hash(deviceId) % workerCount
-Guarantees:
-
-No race on the same device
-
-No double-processing
-
-Ordered execution per device
-
-4. Bounded Command Channels
-Each worker has:
-
-Channel<DeviceCommand>(boundedCapacity: 50)
-If full:
-
-Reject with HTTP 429
-
-Retry-After header
-
-5. Retry Policy + Jitter
-Implemented in:
-
-IRetryPolicy.ExecuteAsync
-With timed retries:
-
-100ms + [0..100]
-
-300ms + [0..300]
-
-700ms + [0..700]
-
-6. Circuit Breaker (per device)
-States:
-
-Closed → Open → Half-Open
-
-Triggers:
-
-5 consecutive failures
-
-Opens for 10 seconds
-
-🔄 Worker Pipeline
-Sequence
-Command enqueued into hashed worker channel
-
-Worker receives command
-
-CircuitBreaker.CanExecute()
-
-Send via protocol adapter
-
-RetryPolicy wraps execution
-
-Update command status
-
-Broadcast via ControlHub
-
-📡 SignalR Message Flow
-Device → Backend
-Heartbeat
-
-Telemetry
-
-CommandCompleted
-
-Backend → Device
-ExecuteCommand (via EdgeSignalRAdapter)
-
-Backend → Operator
-Telemetry update
-
-CommandCompleted
-
-CommandFailed
-
-Operator → Backend
-Subscribe(deviceId)
-
-🧩 Protocol Adapter Architecture
-Interface
-
 public interface IDeviceProtocolAdapter {
-    Task ConnectAsync(Device d, CancellationToken ct);
-    Task<CommandResult> SendCommandAsync(Device d, DeviceCommand c, CancellationToken ct);
-    IAsyncEnumerable<Telemetry> StreamTelemetryAsync(Device d, CancellationToken ct);
+    Task ConnectAsync(Device device, CancellationToken token);
+    Task<CommandResult> SendCommandAsync(Device device, Command cmd, CancellationToken token);
+    IAsyncEnumerable<Telemetry> StreamTelemetryAsync(Device device, CancellationToken token);
 }
-Concrete Adapters
-HttpJsonAdapter
+```
 
-TcpLineAdapter
+### Real-world targets
 
-EdgeSignalRAdapter
+**Extron SIS**
 
-Adapter Resolver
+- RS-232/Telnet
+- Bracketed commands
+- `]`-terminated responses
 
-public IDeviceProtocolAdapter ResolveAdapter(Device device);
-🧠 Snapshot Cache
-Stores:
+**Avocor Displays**
 
-DeviceId → LatestTelemetry
-Purpose:
+- 9600 baud RS-232
+- Hex-framed packets
 
-Fast device detail pages
+### Status
 
-Avoid querying SQLite for latest telemetry
+Adapters defined; real implementations out of scope for timebox.
 
-Using IMemoryCache:
+---
 
-Sliding expiration: 5 minutes
+# 🔭 7. Observability Notes
 
-📅 Keyset Pagination
-Cursor-based (no OFFSET).
+### OpenTelemetry
 
-Example:
+Not implemented — design includes:
 
-GET /api/devices?$top=10&$after=device-10
-SQLite queries remain performant even at large datasets.
+- HTTP traces
+- Worker pipeline spans
+- SignalR event spans
 
-🚦 API-Key Authentication
-Keys:
-Device Key → connects to /hubs/device
+### Metrics
 
-Operator Key → UI & REST API
+Partially implemented:
 
-Middleware sets:
+- Command counts
+- Failure counts
+- Device online/offline
 
-HttpContext.Items["CallerType"]
-Used by authorization attributes:
+---
 
-[DeviceOnly]
+# ⚠️ 8. Chaos Engineering (Design-Level Only)
 
-[OperatorOnly]
+Environment flags:
 
-🩺 Health + Metrics
+```
+CHAOS_LATENCY=1.0-2.0s
+CHAOS_DROP_RATE=0.1
+```
 
-GET /health
-GET /metrics
-Metrics expose:
+Planned integration points:
 
-command_latency_p95
+- Before command routing
+- Before telemetry ingestion
+- SignalR message layer
 
-telemetry_rate
+Stubs exist; full chaos behavior not implemented.
 
-reconnect_count
+---
 
-circuit_breakers_open
+# 🗂️ 9. Notes on Architectural Approach
 
-📊 Telemetry Flow
-Device sends JSON blob via SignalR
+The solution mimics Clean Architecture boundaries but uses folders, not projects, because of time constraints.  
+This preserves:
 
-Backend appends to SQLite
+- Testability
+- Separation of concerns
+- Domain-first thinking
 
-Keeps only last 50 via TrimHistory()
+A production system would split these into individual class libraries.
 
-Publishes update to ControlHub
+---
 
-Stores snapshot in cache
+# 📌 10. Remaining Work & Stretch Goals
 
-🔧 Technology Choices (Justification)
-ASP.NET Core 8
-Fastest .NET runtime ever
+| Feature                | Status             |
+| ---------------------- | ------------------ |
+| OpenTelemetry tracing  | ❌ Not implemented |
+| Chaos injection        | ⚠️ Partial         |
+| Extron/Avocor adapters | ⚠️ Interface-level |
+| gRPC telemetry bridge  | ❌ Not implemented |
+| Integration tests      | ⚠️ Partial         |
+| Command outbox pattern | ❌ Not implemented |
 
-First-class SignalR support
+---
 
-SQLite
-Lightweight embedded DB
+# ✔️ Conclusion
 
-Perfect for edge/control systems
+This system demonstrates:
 
-Easy migration + local development
+- Secure and NAT-friendly SignalR connectivity
+- Real-time telemetry processing
+- Resilient command routing
+- Clear concurrency & idempotency guarantees
+- A maintainable architecture aligned with Cyviz principles
 
-SignalR
-Automatic reconnect
+Missing features are documented with clear upgrade paths for production.
 
-WebSockets fallback
+```
 
-Broadcast groups (per device)
-
-TanStack Query
-Cache-first data fetching
-
-Automatic background refresh
-
-🧪 Testing Strategy
-Unit tests for:
-
-Circuit breaker
-
-Retry policy
-
-Pagination logic
-
-Repositories (SQLite in-memory)
-
-Integration tests for:
-
-DeviceHub > Telemetry ingestion
-
-Command Pipeline > Worker > Adapter
-
-Load tests
-
-10,000 telemetry packets/min
-
-500-command burst stress test
-
-📦 Deployment Considerations
-Cloud Providers
-Azure App Service (enable WebSockets)
-
-AWS Elastic Beanstalk
-
-Kubernetes + NGINX Ingress
-
-SignalR Scaling
-Add Redis backplane:
-
-services.AddSignalR().AddStackExchangeRedis("connection");
-📚 Future Enhancements
-Protocol adapter plugins
-
-Distributed worker queue (Kafka / RabbitMQ)
-
-Role-based operator UI
-
-Device enrollment workflow
-
-Historical telemetry retention in TSDB (InfluxDB / TimescaleDB)
-
-🏁 Summary
-The Cyviz backend implements:
-
-Real-time device control
-
-Concurrent-safe command execution
-
-Robust resilience (retry + CB + hashing)
-
-Fast and scalable pagination
-
-A complete WebSocket-based control loop
+---
+```
