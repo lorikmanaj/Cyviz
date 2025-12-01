@@ -1,5 +1,4 @@
-﻿using Cyviz.Core.Application.Interfaces;
-using Cyviz.Core.Application.Repositories;
+﻿using Cyviz.Core.Application.Repositories;
 using Cyviz.Infrastructure.Database;
 using Cyviz.Infrastructure.Database.Seeders;
 using Microsoft.EntityFrameworkCore;

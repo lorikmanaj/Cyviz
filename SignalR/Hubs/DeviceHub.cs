@@ -1,6 +1,5 @@
 ﻿using Cyviz.Core.Application.Services;
 using Microsoft.AspNetCore.SignalR;
-using System.Text.RegularExpressions;
 
 namespace Cyviz.SignalR.Hubs
 {

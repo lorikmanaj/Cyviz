@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getDeviceDetails } from "../api/devices";
+import type { DeviceDetailDto } from "../types/device";
 
-export const useDeviceDetail = (id: string) => {
-    return useQuery({
+export const useDeviceDetails = (id?: string) =>
+    useQuery<DeviceDetailDto, Error>({
         queryKey: ["device", id],
-        queryFn: () => getDeviceDetails(id),
+        queryFn: () => getDeviceDetails(id!),
+        enabled: !!id,
     });
-};

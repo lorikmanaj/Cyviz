@@ -1,15 +1,16 @@
-import type { DeviceListDto } from "../dtos/DeviceListDto";
-import type { DeviceDetailDto } from "../types/device";
-import { api } from "./axios";
+import { api } from "./apiClient";
+import type { DeviceListDto, DeviceDetailDto } from "../types/device";
+import type { KeysetPageResult } from "../types/pagination/keysetPageResult";
 
 export const getDevices = async (after?: string) => {
-    const { data } = await api.get<DeviceListDto[]>(`/devices`, {
-        params: {
-            top: 20,
-            after
-        },
+    const params: { top: number; after?: string } = { top: 20 };
+    if (after) params.after = after;
+
+    const { data } = await api.get<KeysetPageResult<DeviceListDto>>("/devices", {
+        params,
     });
-    return data;
+
+    return data; // { items, nextCursor }
 };
 
 export const getDeviceDetails = async (id: string) => {

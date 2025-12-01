@@ -21,6 +21,13 @@ namespace Cyviz.Infrastructure.Middlewares
         {
             var path = context.Request.Path.Value?.ToLowerInvariant();
 
+            // Allow CORS preflight (OPTIONS) to pass through without API key
+            if (context.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
+            {
+                await _next(context);
+                return;
+            }
+
             // Allow Swagger + health checks without API key
             if (path.StartsWith("/swagger") ||
                 path.StartsWith("/health") ||

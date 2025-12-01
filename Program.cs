@@ -78,7 +78,7 @@ namespace Cyviz
             {
                 options.AddPolicy("AllowFrontend", builder =>
                 {
-                    builder.WithOrigins("http://localhost:3000")
+                    builder.WithOrigins("http://localhost:5173")//3000
                            .AllowAnyHeader()
                            .AllowAnyMethod()
                            .AllowCredentials();
@@ -106,17 +106,15 @@ namespace Cyviz
                 app.UseSwaggerUI();
             }
 
-            // ORDER OF MIDDLEWARES MATTERS
+            app.UseRouting();
+
+            app.UseCors("AllowFrontend");
+
             app.UseMiddleware<RequestLoggingMiddleware>();
             app.UseMiddleware<ApiKeyMiddleware>();
             app.UseMiddleware<ExceptionMiddleware>();
 
-            app.UseCors("AllowFrontend");
-            app.UseRouting();
-
             app.MapControllers();
-
-            // Map SignalR hubs
             app.MapHub<DeviceHub>("/hubs/device");
             app.MapHub<ControlHub>("/hubs/control");
         }

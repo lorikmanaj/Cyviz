@@ -1,19 +1,35 @@
+import { useEffect, useState, type ReactNode } from "react";
 import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr";
-import { useEffect, useState } from "react";
+import { SignalRContext } from "./SignalRContext";
 
-export const SignalRProvider = ({ children }: { children: React.ReactNode }) => {
+export const SignalRProvider = ({ children }: { children: ReactNode }) => {
   const [connection, setConnection] = useState<HubConnection | null>(null);
 
   useEffect(() => {
+    const url = import.meta.env.VITE_SIGNALR_URL;
+
+    if (!url) {
+      console.error("❌ VITE_SIGNALR_URL is missing. Define it in .env");
+      return;
+    }
+
     const conn = new HubConnectionBuilder()
-      .withUrl("http://localhost:7266/hubs/control", {
-        headers: { "X-Api-Key": "operator-secret-key" },
+      .withUrl(url, {
+        withCredentials: true,
+        headers: {
+          "X-Api-Key": "operator-secret-key",
+        },
       })
       .withAutomaticReconnect()
       .build();
 
-    conn.start().catch(console.error);
-    setConnection(conn);
+    conn
+      .start()
+      .then(() => {
+        console.log("SignalR connected:", url);
+        setConnection(conn);
+      })
+      .catch((err) => console.error("SignalR connection error:", err));
 
     return () => {
       conn.stop();

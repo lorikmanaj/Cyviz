@@ -1,27 +1,33 @@
-export interface DeviceListItem {
+export interface DeviceListDto {
     id: string;
     name: string;
-    status: string;
-}
-
-export interface TelemetrySnapshot {
-    deviceId: string;
-    timestampUtc: string;
-    dataJson: string;
+    type: DeviceType;
+    status: DeviceStatus;
+    location: string;
+    lastSeenUtc: string;
 }
 
 export interface DeviceDetailDto {
     id: string;
     name: string;
-    type: string;
-    status: string;
-    lastSeenUtc: string;
+    type: DeviceType;
+    protocol: DeviceProtocol;
+    capabilities: string[];
+    status: DeviceStatus;
     firmware: string;
     location: string;
-    latestTelemetry?: TelemetrySnapshot;
+    lastSeenUtc: string;
+    latestTelemetry?: DeviceSnapshotDto | null;
 }
 
-export interface KeysetPage<T> {
-    items: T[];
-    nextCursor?: string | null;
+export interface DeviceSnapshotDto {
+    deviceId: string;
+    timestampUtc: string;
+    dataJson: string; // JSON string containing telemetry
 }
+
+export type DeviceType = "Display" | "Codec" | "Switcher" | "Sensor";
+
+export type DeviceProtocol = "TcpLine" | "HttpJson" | "EdgeSignalR";
+
+export type DeviceStatus = "Online" | "Offline";

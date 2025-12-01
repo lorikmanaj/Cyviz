@@ -1,16 +1,15 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
 import { getDevices } from "../api/devices";
-import type { DeviceListDto } from "../dtos/DeviceListDto";
-import type { KeysetPage } from "../types/device";
+import type { DeviceListDto } from "../types/device";
+import type { KeysetPageResult } from "../types/pagination/keysetPageResult";
+
+export type Page = KeysetPageResult<DeviceListDto>;
 
 export const useDevices = () =>
-    useInfiniteQuery<
-        KeysetPage<DeviceListDto>,   // lastPage type
-        Error,
-        KeysetPage<DeviceListDto>    // page type
-    >({
+    useInfiniteQuery<Page, Error, InfiniteData<Page>, ["devices"], string | undefined>({
         queryKey: ["devices"],
-        queryFn: ({ pageParam }) => getDevices(pageParam ?? null),
-        initialPageParam: null as string | null,
-        getNextPageParam: (last) => last.nextCursor ?? null,
+        queryFn: ({ pageParam }) => getDevices(pageParam),
+        getNextPageParam: (lastPage) =>
+            lastPage.nextCursor ?? undefined,
+        initialPageParam: undefined,
     });
