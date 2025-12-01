@@ -15,7 +15,7 @@ This project implements the core building blocks of the Cyviz interview challeng
 
 Some stretch goals (OpenTelemetry, chaos testing, full adapter implementations) are described but not fully implemented — details are marked throughout the documentation.
 
----
+## For Architectural information, visit the Architure.md - 👉 [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ## 📁 Project Structure
 
@@ -137,3 +137,5 @@ GET	/api/devices/{id}/commands/{commandId}	Retrieve command status
 More details in ARCHITECTURE.md.
 
 ```
+
+For Architectural information, visit the Architure.md - 👉 [ARCHITECTURE.md](ARCHITECTURE.md)
