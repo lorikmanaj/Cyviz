@@ -1,12 +1,17 @@
-import { Routes, Route } from "react-router-dom";
-import { Dashboard } from "./pages/Dashboard";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DevicePage } from "./pages/DevicePage";
+import { Dashboard } from "./pages/Dashboard";
+import { Layout } from "./layout/Layout";
 
-export const App = () => {
+export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/device/:id" element={<DevicePage />} />
-    </Routes>
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/device/:id" element={<DevicePage />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
   );
-};
+}

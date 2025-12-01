@@ -1,15 +1,24 @@
+import React from "react";
 import ReactDOM from "react-dom/client";
-import { QueryProvider } from "./providers/QueryProvider";
+import { ThemeProvider, CssBaseline } from "@mui/material";
+import { theme } from "./theme";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SignalRProvider } from "./providers/SignalRProvider";
-import { BrowserRouter } from "react-router-dom";
-import { App } from "./App";
+import App from "./App";
+import { Toaster } from "react-hot-toast";
+
+const qc = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <QueryProvider>
-    <SignalRProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </SignalRProvider>
-  </QueryProvider>
+  <React.StrictMode>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <QueryClientProvider client={qc}>
+        <SignalRProvider>
+            <Toaster position="bottom-right" />
+          <App />
+        </SignalRProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  </React.StrictMode>
 );

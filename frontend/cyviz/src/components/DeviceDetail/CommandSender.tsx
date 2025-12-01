@@ -16,6 +16,8 @@ import { newIdempotencyKey } from "../../utils/idempotency";
 import type { HubConnection } from "@microsoft/signalr";
 import type { CommandStatusDto, CommandResponseDto, CommandSignalREvent } from "../../types/command";
 
+import toast from "react-hot-toast";
+
 export const CommandSender = ({ deviceId }: { deviceId: string }) => {
   const connection = useContext<HubConnection | null>(SignalRContext);
 
@@ -32,6 +34,8 @@ export const CommandSender = ({ deviceId }: { deviceId: string }) => {
       if (msg.deviceId !== deviceId) return;
       if (!latestCommand || msg.commandId !== latestCommand.commandId) return;
 
+      toast.success("Command completed ⚡");
+
       setLatestCommand((prev) =>
         prev
           ? {
@@ -46,6 +50,8 @@ export const CommandSender = ({ deviceId }: { deviceId: string }) => {
     const failedHandler = (msg: CommandSignalREvent) => {
       if (msg.deviceId !== deviceId) return;
       if (!latestCommand || msg.commandId !== latestCommand.commandId) return;
+
+      toast.error("Command failed ❌");
 
       setLatestCommand((prev) =>
         prev

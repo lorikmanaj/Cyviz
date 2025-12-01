@@ -31,3 +31,8 @@ export type DeviceType = "Display" | "Codec" | "Switcher" | "Sensor";
 export type DeviceProtocol = "TcpLine" | "HttpJson" | "EdgeSignalR";
 
 export type DeviceStatus = "Online" | "Offline";
+
+export interface DeviceStatusChangedEvent {
+  deviceId: string;
+  status: "Online" | "Offline";
+}
